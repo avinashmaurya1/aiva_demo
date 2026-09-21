@@ -2,7 +2,9 @@ import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/sse_client.dart';
 import '../../domain/entities/chat_message.dart';
+import '../../domain/entities/chat_session.dart';
 import '../../domain/entities/sse_event.dart';
+import '../models/chat_session_model.dart';
 
 abstract class ChatRemoteDataSource {
   Stream<SseEvent> streamChatTurn({
@@ -14,17 +16,23 @@ abstract class ChatRemoteDataSource {
   });
 
   Future<Map<String, dynamic>?> fetchArtifact(String artifactId);
+  Future<List<ChatSessionSummary>> fetchSessions(String token);
+  Future<List<ChatMessage>> fetchSessionMessages({
+    required String sessionId,
+    required String token,
+  });
+  Future<void> deleteAllSessions(String token);
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
-  final SseClient _sseClient;
-  final ApiClient _apiClient;
+  final SseClient sseClient;
+  final ApiClient apiClient;
 
   ChatRemoteDataSourceImpl({
     SseClient? sseClient,
     ApiClient? apiClient,
-  })  : _sseClient = sseClient ?? SseClient(),
-        _apiClient = apiClient ?? ApiClient();
+  })  : sseClient = sseClient ?? SseClient(),
+        apiClient = apiClient ?? ApiClient();
 
   @override
   Stream<SseEvent> streamChatTurn({
@@ -43,7 +51,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       body['session_id'] = sessionId;
     }
 
-    final rawStream = _sseClient.streamEvents(
+    final rawStream = sseClient.streamEvents(
       url: ApiEndpoints.chatStream,
       token: token,
       body: body,
@@ -147,14 +155,71 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     return null;
   }
 
-
   @override
   Future<Map<String, dynamic>?> fetchArtifact(String artifactId) async {
     try {
-      final response = await _apiClient.get(ApiEndpoints.artifactById(artifactId));
+      final response = await apiClient.get(ApiEndpoints.artifactById(artifactId));
       return response;
     } catch (_) {
       return null;
     }
+  }
+
+  @override
+  Future<List<ChatSessionSummary>> fetchSessions(String token) async {
+    try {
+      final response = await apiClient.get(
+        ApiEndpoints.chatSessions,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      List rawList = [];
+      if (response['data'] is List) {
+        rawList = response['data'] as List;
+      } else if (response is List) {
+        rawList = response as List;
+      }
+
+      return rawList
+          .whereType<Map<String, dynamic>>()
+          .map((item) => ChatSessionModel.fromJson(item))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  @override
+  Future<List<ChatMessage>> fetchSessionMessages({
+    required String sessionId,
+    required String token,
+  }) async {
+    try {
+      final response = await apiClient.get(
+        ApiEndpoints.sessionById(sessionId),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      final dynamic rawMessages = response['messages'] ?? response['data']?['messages'];
+      if (rawMessages is List) {
+        return ChatSessionModel.parseMessages(rawMessages);
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  @override
+  Future<void> deleteAllSessions(String token) async {
+    try {
+      await apiClient.post(
+        ApiEndpoints.chatSessions,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'X-HTTP-Method-Override': 'DELETE',
+        },
+      );
+    } catch (_) {}
   }
 }

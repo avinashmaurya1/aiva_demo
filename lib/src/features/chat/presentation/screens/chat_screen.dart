@@ -8,10 +8,11 @@ import '../controllers/chat_bloc.dart';
 import '../controllers/chat_event.dart';
 import '../controllers/chat_state.dart';
 import '../widgets/chat_bubble.dart';
+import '../widgets/chat_history_drawer.dart';
 import '../widgets/chat_input_bar.dart';
 import '../widgets/travel_suggestion_bar.dart';
 
-/// Real-time Agentic Travel Chat Screen
+/// Real-time Agentic Travel Chat Screen with Session History
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
 
@@ -21,6 +22,12 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -61,6 +68,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Scaffold(
       appBar: _buildAppBar(context, isDark),
+      drawer: const ChatHistoryDrawer(),
       body: BlocConsumer<ChatBloc, ChatState>(
         listener: (context, state) {
           if (state.isStreaming || state.messages.isNotEmpty) {
@@ -68,6 +76,19 @@ class _ChatScreenState extends State<ChatScreen> {
           }
         },
         builder: (context, state) {
+          if (state.isLoadingHistory) {
+            return const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2.5),
+                  SizedBox(height: 12),
+                  Text('Loading conversation history...', style: TextStyle(fontSize: 13)),
+                ],
+              ),
+            );
+          }
+
           return Column(
             children: [
               // Message Feed
@@ -107,6 +128,16 @@ class _ChatScreenState extends State<ChatScreen> {
 
   PreferredSizeWidget _buildAppBar(BuildContext context, bool isDark) {
     return AppBar(
+      leading: Builder(
+        builder: (ctx) => IconButton(
+          tooltip: 'Conversation History',
+          icon: const Icon(Icons.menu_rounded),
+          onPressed: () {
+            context.read<ChatBloc>().add(const ChatSessionsFetchRequested());
+            Scaffold.of(ctx).openDrawer();
+          },
+        ),
+      ),
       title: Row(
         children: [
           Container(
@@ -118,37 +149,48 @@ class _ChatScreenState extends State<ChatScreen> {
             child: const Icon(Icons.flight_rounded, color: AppColors.primary, size: 20),
           ),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'AIVA Travel Agent',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, authState) {
-                  final userName = authState is Authenticated
-                      ? (authState.userProfile?.userName ?? 'Logged In')
-                      : 'Active';
-                  return Text(
-                    'AgenticBox SSE • $userName',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                    ),
-                  );
-                },
-              ),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'AIVA Travel Agent',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, authState) {
+                    final userName = authState is Authenticated
+                        ? (authState.userProfile?.userName ?? 'Logged In')
+                        : 'Active';
+                    return BlocBuilder<ChatBloc, ChatState>(
+                      builder: (context, chatState) {
+                        final sessionIndicator = chatState.sessionId != null
+                            ? ' • Session active'
+                            : ' • New Chat';
+                        return Text(
+                          '$userName$sessionIndicator',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),
       actions: [
         IconButton(
           tooltip: 'New Conversation',
-          icon: const Icon(Icons.refresh_rounded),
+          icon: const Icon(Icons.add_comment_outlined),
           onPressed: () {
-            context.read<ChatBloc>().add(const ChatSessionReset());
+            context.read<ChatBloc>().add(const ChatNewSessionRequested());
           },
         ),
         IconButton(
@@ -168,44 +210,44 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Container(
-            width: 76,
-            height: 76,
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [AppColors.primary, AppColors.accentCyan],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.primary.withAlpha(70),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
+                  blurRadius: 16,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
-            child: const Icon(Icons.travel_explore_rounded, color: Colors.white, size: 40),
+            child: const Icon(Icons.travel_explore_rounded, color: Colors.white, size: 38),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           const Text(
             'Where would you like to travel?',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
-            'AIVA can search real-time flights, compare hotel prices, check PNR status, and book your trip seamlessly.',
+            'Search real-time flights, compare hotel prices, check PNR status, and book your trip seamlessly.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12.5,
               color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
           _buildFeatureCard(
             context,
             icon: Icons.flight_takeoff_rounded,

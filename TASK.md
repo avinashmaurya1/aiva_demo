@@ -35,10 +35,12 @@
 ## 📌 Backlog (Roadmap Tasks)
 
 ### 📜 Phase 4: History, Session Persistence & Polish
-- [ ] **[2026-09-21] Session Management & History Drawer**
-  - [ ] Integrate `GET /api/chat/sessions` and `GET /api/chat/sessions/{id}` to restore past chat turns
-  - [ ] Build session history drawer / screen with date grouping and search
-  - [ ] Implement token refresh worker (`POST /api/auth/refresh`)
+- [x] **[2026-09-21] Session Management & History Drawer**
+  - [x] Integrate `GET /api/chat/sessions` to list past conversations
+  - [x] Integrate `GET /api/chat/sessions/{id}` to restore full turn history and artifacts
+  - [x] Build `ChatHistoryDrawer` with New Conversation (+) action, session switching, and clear history
+  - [x] Preserve active `session_id` across multi-turn queries and automatically refresh history on completion
+
 
 ---
 

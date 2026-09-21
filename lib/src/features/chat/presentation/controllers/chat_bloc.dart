@@ -16,7 +16,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   }) : super(const ChatState()) {
     on<ChatTurnSubmitted>(_onChatTurnSubmitted);
     on<ChatArtifactPayloadLoaded>(_onChatArtifactPayloadLoaded);
-    on<ChatSessionReset>(_onChatSessionReset);
+    on<ChatSessionsFetchRequested>(_onChatSessionsFetchRequested);
+    on<ChatSessionSelected>(_onChatSessionSelected);
+    on<ChatNewSessionRequested>(_onChatNewSessionRequested);
+    on<ChatAllSessionsDeleteRequested>(_onChatAllSessionsDeleteRequested);
+    on<ChatSessionReset>((event, emit) => add(const ChatNewSessionRequested()));
   }
 
   Future<void> _onChatTurnSubmitted(
@@ -132,7 +136,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
             if (artifact != null) {
               activeArtifacts.add(artifact);
-              // Asynchronously fetch full payload
               unawaited(_fetchFullArtifactPayload(artifact.artifactId));
             }
 
@@ -167,6 +170,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
               sessionId: sessionId,
             ));
             break;
+
 
           case SseErrorEvent(:final message):
             _updateAgentMessage(
@@ -254,10 +258,71 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(state.copyWith(messages: updatedMessages));
   }
 
-  void _onChatSessionReset(
-    ChatSessionReset event,
+  Future<void> _onChatSessionsFetchRequested(
+    ChatSessionsFetchRequested event,
+    Emitter<ChatState> emit,
+  ) async {
+    final token = tokenProvider();
+    if (token.isEmpty) return;
+
+    emit(state.copyWith(isLoadingSessions: true));
+    final sessions = await chatRepository.getSessions(token);
+    emit(state.copyWith(
+      sessions: sessions,
+      isLoadingSessions: false,
+    ));
+  }
+
+  Future<void> _onChatSessionSelected(
+    ChatSessionSelected event,
+    Emitter<ChatState> emit,
+  ) async {
+    final token = tokenProvider();
+    if (token.isEmpty) return;
+
+    emit(state.copyWith(
+      isLoadingHistory: true,
+      sessionId: event.sessionId,
+    ));
+
+    final historyMessages = await chatRepository.getSessionMessages(
+      sessionId: event.sessionId,
+      token: token,
+    );
+
+    emit(state.copyWith(
+      messages: historyMessages,
+      sessionId: event.sessionId,
+      isLoadingHistory: false,
+      clearCurrentToolCall: true,
+      clearError: true,
+    ));
+  }
+
+  void _onChatNewSessionRequested(
+    ChatNewSessionRequested event,
     Emitter<ChatState> emit,
   ) {
-    emit(const ChatState());
+    emit(state.copyWith(
+      messages: const [],
+      clearSessionId: true,
+      clearCurrentToolCall: true,
+      clearError: true,
+    ));
+  }
+
+  Future<void> _onChatAllSessionsDeleteRequested(
+    ChatAllSessionsDeleteRequested event,
+    Emitter<ChatState> emit,
+  ) async {
+    final token = tokenProvider();
+    if (token.isEmpty) return;
+
+    await chatRepository.deleteAllSessions(token);
+    emit(state.copyWith(
+      sessions: const [],
+      messages: const [],
+      clearSessionId: true,
+    ));
   }
 }
