@@ -1,0 +1,59 @@
+================================================================================
+PRODUCT REQUIREMENTS DOCUMENT (PRD)
+Project Name: AIVA AI Agent Mobile
+Platform: Flutter (iOS & Android)
+Version: 1.0.0
+Date: 2026-09-21
+Status: Draft / Active
+================================================================================
+
+1. EXECUTIVE SUMMARY & VISION
+--------------------------------------------------------------------------------
+AIVA (Artificial Intelligence Virtual Assistant) is a next-generation autonomous AI agent mobile companion built with Flutter. AIVA empowers users with multimodal AI intelligence (real-time chat, voice conversations, document/image analysis, and autonomous workflow execution) directly on their mobile devices with privacy, responsiveness, and seamless UX.
+
+2. TARGET AUDIENCE & PERSONAS
+--------------------------------------------------------------------------------
+- Power Users & Developers: Need fast coding assistance, quick debugging, markdown rendering with syntax highlighting, and custom agent tool orchestration.
+- Everyday Professionals: Require calendar/task management, email drafting, summarizing articles/PDFs, voice-to-action commands, and smart reminders.
+- General Consumers: Want a responsive, friendly, and multimodal companion assistant for daily inquiries, translations, and multimodal recognition.
+
+3. CORE USER JOURNEYS & CAPABILITIES
+--------------------------------------------------------------------------------
+3.1. Multimodal Conversational Interface
+- Fast, fluid chat UI supporting text, voice notes, and image attachments.
+- Token-by-token real-time streaming response rendering.
+- Markdown, LaTeX math, and syntax-highlighted code block rendering with 1-tap copy and action triggers.
+
+3.2. Voice & Live Speech Mode
+- Low-latency voice interaction with animated waveform visualization.
+- Real-time Speech-to-Text (STT) and dynamic Text-to-Speech (TTS) response playback.
+
+3.3. Autonomous Agent Tools & Workflows
+- Ability for AI Agent to trigger client-side and cloud tools (e.g., calendar check, web search, notification scheduling).
+- Visual action cards indicating tool execution status (Invoking, Executed, Result).
+
+3.4. Session & Conversation History
+- Instant offline-first session caching with search, rename, archive, and delete options.
+- Grouping chats by date (Today, Yesterday, Previous 7 Days, Older).
+
+3.5. Settings, Personas & Personalization
+- Dark / Light / System theme switching.
+- Model selection (e.g. Gemini Pro / Flash / Custom endpoint).
+- Custom system prompt & persona configuration.
+- Secure API key & token management using encrypted local storage.
+
+4. NON-FUNCTIONAL REQUIREMENTS (NFR)
+--------------------------------------------------------------------------------
+- Performance: First Frame render < 1.5s; 60/120fps smooth scrolling during active stream.
+- File Size & Architecture: Strict adherence to <500 lines per file; Feature-First Clean Architecture.
+- Security: Secure local storage (Flutter Secure Storage / Keychain / KeyStore) for credentials.
+- Error Handling: Resilient reconnects for SSE/WebSockets, graceful offline banner, retry buttons.
+- Accessibility: Minimum 48x48 tap targets, full semantic screen reader labels, high-contrast theming.
+
+5. RELEASE MILESTONES
+--------------------------------------------------------------------------------
+- Phase 1 (Foundation): Architecture scaffold, theme system, navigation, local storage setup.
+- Phase 2 (Core Chat UI & Streaming): Multimodal chat screen, markdown parser, mock & live streaming.
+- Phase 3 (Agent Capabilities): Tool invocation cards, voice audio engine, session history management.
+- Phase 4 (Polish & Release): End-to-end integration tests, crash analytics, store release prep.
+================================================================================
